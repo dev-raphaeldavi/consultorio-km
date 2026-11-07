@@ -1,0 +1,2 @@
+[functions.invite-professional]
+verify_jwt = true
