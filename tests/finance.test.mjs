@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {demoData,balance,receive,installmentsFor,advance,uuid,today,cents} from '../src/domain.js';
+import {demoData,balance,receive,installmentsFor,advance,uuid,today,cents,cloneData} from '../src/domain.js';
 test('parcelas preservam os centavos e ajustam o fim do mês',()=>{const xs=installmentsFor({id:'x',total_cents:10000,installment_count:3,first_due:'2026-01-31'});assert.equal(xs.reduce((s,x)=>s+x.amount_cents,0),10000);assert.deepEqual(xs.map(x=>x.due_date),['2026-01-31','2026-02-28','2026-03-31']);});
 test('recebimento parcial, idempotência, quitação e limite de saldo',()=>{const d=demoData(),b=d.budgets.find(x=>x.id==='b1'),r=uuid();assert.equal(balance(d,b),28000);receive(d,b.id,10000,'pix',today(),'demo-professional',r);assert.equal(balance(d,b),18000);receive(d,b.id,10000,'pix',today(),'demo-professional',r);assert.equal(balance(d,b),18000);assert.throws(()=>receive(d,b.id,18001,'pix',today(),'demo-professional',uuid()));receive(d,b.id,18000,'pix',today(),'demo-professional',uuid());assert.equal(balance(d,b),0);});
 test('não permite saltar a aprovação nem cancelar orçamento pago',()=>{const d=demoData();assert.throws(()=>advance(d,'b3','performed'));assert.throws(()=>advance(d,'b1','cancelled'));});
 test('entrada monetária usa centavos e rejeita valores inválidos',()=>{assert.equal(cents('123.45'),12345);assert.equal(cents('1,99'),199);for(const n of ['abc','-1','0','Infinity'])assert.throws(()=>cents(n));});
+test('cópia dos dados funciona sem structuredClone',()=>{const original=globalThis.structuredClone;try{globalThis.structuredClone=undefined;const source={items:[{value:1}]},copy=cloneData(source);copy.items[0].value=2;assert.equal(source.items[0].value,1);}finally{globalThis.structuredClone=original;}});
+test('identificador tem formato UUID',()=>assert.match(uuid(),/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/));
