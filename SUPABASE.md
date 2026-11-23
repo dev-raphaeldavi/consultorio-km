@@ -41,13 +41,12 @@ A versão inicial do Sites é privada para o proprietário. Para usuários exter
 
 Publique `supabase/functions/invite-professional/index.ts` como Edge Function chamada `invite-professional`. Ela aceita apenas a ação administrativa de redefinição de senha de profissionais.
 
-Configure o secret `APP_ORIGIN` com a origem exata da aplicação, sem barra final, por exemplo `https://seu-dominio.com`. `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` ficam exclusivamente no ambiente seguro da Edge Function. Nunca exponha a chave administrativa no site.
+`SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` ficam exclusivamente no ambiente seguro da Edge Function. Nunca exponha a chave administrativa no site. A origem permitida está fixada em `https://consultoriokm.vercel.app`.
 
 Com a CLI já autenticada e vinculada ao projeto:
 
 ```sh
 supabase functions deploy invite-professional
-supabase secrets set APP_ORIGIN=https://seu-dominio.com
 ```
 
 A função valida a sessão e o perfil ativo de administradora, redefine somente profissionais para `ckm123`, marca `must_change_password` e grava auditoria. A chave administrativa nunca vai para o navegador.
