@@ -6,18 +6,13 @@ O portal está pronto para receber a URL e a chave pública do seu projeto. A de
 
 Crie sua conta e um projeto no Supabase. Guarde a senha do banco em seu gerenciador de senhas. Não é necessário enviar essa senha para conectar o frontend.
 
-No SQL Editor, execute uma única vez o conteúdo integral de `supabase/migrations/001_initial.sql`, em um projeto novo. O script usa transação: em caso de erro, corrija antes de continuar. Não execute sobre um banco existente sem revisar conflitos e backup.
+No SQL Editor, execute em ordem `001_initial.sql` e `002_financial_approvals.sql`. Depois de criar os usuários no Auth, execute `003_seed_profiles.sql`. Os scripts usam transação.
 
 As tabelas são: profiles, patients, patient_access, services, budgets, budget_items, installments, payments, expenses e audit_logs. Todas têm RLS habilitada. O visitante não tem acesso. Operações de orçamento e recebimento ocorrem por funções que verificam a identidade e aplicam a transação no servidor.
 
-## 2. Criar o primeiro acesso da Dra. Kamila
+## 2. Criar os acessos
 
-Em Authentication / Users, crie o usuário real da proprietária. Use uma senha forte e privada ou o fluxo de convite do painel. Copie o UUID desse usuário e execute no SQL Editor, substituindo o marcador:
-
-```sql
-insert into public.profiles (id, full_name, role, active)
-values ('UUID-REAL-DO-USUARIO', 'Dra. Kamila Marinho', 'admin', true);
-```
+Em Authentication / Users, crie as cinco contas `@consultoriokm.com.br` definidas no projeto. A senha inicial solicitada é `ckm123`; ela é temporária e a aplicação força a troca no primeiro acesso. Execute `003_seed_profiles.sql` para vincular os UUIDs e atribuir Kamila como administradora.
 
 Não use o campo `user_metadata` para decidir quem é administradora. O papel vem exclusivamente da tabela `profiles`, que não pode ser editada por um usuário comum.
 
@@ -42,9 +37,9 @@ No painel Auth, configure Site URL com a origem real do site. Cadastre também a
 
 A versão inicial do Sites é privada para o proprietário. Para usuários externos utilizarem o portal, o acesso da hospedagem precisará ser configurado para a audiência pretendida. Isso é separado do login Supabase.
 
-## 5. Habilitar convites pela tela Equipe
+## 5. Habilitar a redefinição administrativa
 
-Publique `supabase/functions/invite-professional/index.ts` como uma Supabase Edge Function chamada `invite-professional`. Mantenha a verificação JWT ativada, conforme `supabase/config.toml`.
+Publique `supabase/functions/invite-professional/index.ts` como Edge Function chamada `invite-professional`. Ela aceita apenas a ação administrativa de redefinição de senha de profissionais.
 
 Configure o secret `APP_ORIGIN` com a origem exata da aplicação, sem barra final, por exemplo `https://seu-dominio.com`. `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` ficam exclusivamente no ambiente seguro da Edge Function. Nunca exponha a chave administrativa no site.
 
@@ -55,14 +50,7 @@ supabase functions deploy invite-professional
 supabase secrets set APP_ORIGIN=https://seu-dominio.com
 ```
 
-A função valida a sessão, consulta o perfil ativo de administradora e cria apenas perfis `professional`. O e-mail é enviado somente ao confirmar “Enviar convite” na tela Equipe. Se o envio acontecer mas o cadastro do perfil falhar, a função informa a falha parcial; confira Auth e profiles antes de reenviar. O profissional permanece sem acesso até existir um perfil ativo.
-
-Alternativa inicial sem Edge Function: crie o profissional no painel Auth e insira o perfil no SQL Editor:
-
-```sql
-insert into public.profiles (id, full_name, role, active)
-values ('UUID-REAL-DO-PROFISSIONAL', 'Nome do profissional', 'professional', true);
-```
+A função valida a sessão e o perfil ativo de administradora, redefine somente profissionais para `ckm123`, marca `must_change_password` e grava auditoria. A chave administrativa nunca vai para o navegador.
 
 ## 6. Homologar com três contas
 

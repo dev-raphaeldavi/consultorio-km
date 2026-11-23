@@ -19,13 +19,14 @@ Deno.serve(async (req) => {
   const { data: profile } = await client.from('profiles').select('role, active').eq('id', identity.user.id).single();
   if (!profile?.active || profile.role !== 'admin') return reply({ error: 'Somente a proprietária pode convidar profissionais.' }, 403);
   try {
-    const { email, full_name } = await req.json();
-    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || typeof full_name !== 'string' || full_name.trim().length < 2 || full_name.length > 120) return reply({ error: 'Informe nome e e-mail válidos.' }, 400);
-    const { data, error } = await client.auth.admin.inviteUserByEmail(email.trim().toLowerCase(), { redirectTo: origin + '/?onboarding=1', data: { full_name: full_name.trim() } });
-    if (error || !data.user) return reply({ error: 'Não foi possível enviar o convite. Confira se o e-mail já possui cadastro e as configurações de envio.' }, 400);
-    const { error: profileError } = await client.from('profiles').insert({ id: data.user.id, full_name: full_name.trim(), role: 'professional', active: true });
-    if (profileError) return reply({ error: 'Convite enviado, mas o perfil não foi liberado. A administração deve conferir o cadastro no Supabase antes de reenviar.' }, 409);
-    await client.from('audit_logs').insert({ actor_id: identity.user.id, action: 'INVITE', entity: 'profiles', record_id: data.user.id });
-    return reply({ success: true });
+    const { action, user_id } = await req.json();
+    if (action !== 'reset_password' || typeof user_id !== 'string') return reply({ error: 'Operação inválida.' }, 400);
+    const { data: target } = await client.from('profiles').select('id, role').eq('id', user_id).single();
+    if (!target || target.role !== 'professional') return reply({ error: 'Profissional não encontrado.' }, 404);
+    const { error } = await client.auth.admin.updateUserById(user_id, { password: 'ckm123' });
+    if (error) return reply({ error: 'Não foi possível redefinir a senha.' }, 400);
+    await client.from('profiles').update({ must_change_password: true }).eq('id', user_id);
+    await client.from('audit_logs').insert({ actor_id: identity.user.id, action: 'RESET_PASSWORD', entity: 'profiles', record_id: user_id });
+    return reply({ success: true, temporary_password: 'ckm123' });
   } catch { return reply({ error: 'Não foi possível processar o convite.' }, 400); }
 });

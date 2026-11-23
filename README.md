@@ -26,26 +26,24 @@ O código de interface está em `src/`; HTML, CSS e imagens em `dist/`. O build 
 - Catálogo de serviços e valores; cadastro pela administradora.
 - Odontograma FDI permanente para escolher o dente de cada item do orçamento.
 - Orçamentos com múltiplos procedimentos e 1 a 24 parcelas; preço validado no banco.
-- Aprovação, registro de serviço realizado, cancelamento de orçamento ainda não executado e sem recebimentos ativos.
+- Fechamento do orçamento libera execução e recebimento; aprovação separada da Dra. Kamila valida a entrada na contabilidade.
 - Recebimentos parciais por Pix, cartão, dinheiro e transferência, vinculados ao orçamento e alocados nas parcelas mais antigas.
-- Financeiro consolidado para administradora, visão individual para profissional, filtros por mês/profissional, despesas, saldo, parcelas abertas e estornos com motivo.
+- Financeiro consolidado para administradora, visão individual para profissional, filtros por mês/profissional, faturado, recebido, pendente, porcentagens, repasse, despesas e estornos.
 - Plano de tratamento e relatório financeiro via impressão / “Salvar como PDF” do navegador; exportação CSV.
 - Histórico de ações. Recebimentos não são excluídos: estornos preservam o registro.
-- Código de Edge Function para a administradora convidar profissionais. Nenhum convite real foi enviado durante o desenvolvimento.
+- Configurações de perfil, troca de senha e redefinição administrativa para a senha temporária `ckm123`, com troca obrigatória no próximo acesso.
 
 ## Regras financeiras adotadas
 
-Valores são armazenados em centavos inteiros. Orçamento em rascunho não entra no saldo a receber. Aprovação gera parcelas. Recebimento é caixa efetivo e independe da conclusão do serviço, permitindo adiantamentos. “Realizado” indica conclusão do orçamento inteiro nesta versão. O pagamento é alocado por ordem de parcela; a data do pagamento determina o mês de caixa. A receber soma todos os saldos aprovados/realizados, enquanto a lista de parcelas usa o mês de vencimento selecionado. Estornos reabrem o saldo e retiram o lançamento dos recebimentos confirmados.
-
-Não há divisão automática de repasses, comissões, taxas de cartão ou receitas retidas pelo parceiro. A regra comercial entre consultório e profissional precisa ser definida antes de acrescentar essa apuração. Registros não movimentam contas bancárias nem cobram cartões.
+Valores são armazenados em centavos inteiros. Ao fechar a ficha, as parcelas são geradas e o procedimento pode seguir. A aprovação contábil da proprietária não bloqueia o trabalho: valida porcentagens e decide se o lançamento entra nos relatórios globais. O recebimento pode ser parcial ou total, informa a forma de pagamento e é alocado nas parcelas mais antigas. Os relatórios mostram faturado, recebido, pendente e as partes do profissional e do consultório.
 
 ## Supabase
 
-Siga `SUPABASE.md`. A migração cria as tabelas, políticas RLS, funções transacionais e auditoria. Nenhum projeto, banco, usuário ou senha real foi criado. Não existe senha padrão.
+Siga `SUPABASE.md`. As migrações criam tabelas, RLS, aprovação contábil, funções transacionais, auditoria e perfis vinculados aos usuários do Auth.
 
 ## Validação desta entrega
 
-16 testes passaram com PostgreSQL embarcado (PGlite) e testes de domínio. Cobrem a migração, controle de acesso, profissionais isolados, bloqueio de autoelevação de perfil, catálogo protegido, transições, parcelamento exato, limite de saldo, idempotência do recebimento, estorno, bloqueio de perfil inativo e visitante anônimo.
+20 testes passam com PostgreSQL embarcado (PGlite) e testes de domínio. Cobrem controle de acesso, profissionais isolados, aprovação contábil independente, porcentagens, parcelamento, recebimento parcial, idempotência, estorno, perfil inativo e visitante anônimo.
 
 O fluxo de demonstração também foi exercitado no navegador: orçamento com dente 21, aprovação, execução, recebimento parcial e consolidação na visão administrativa. Login, entrega de e-mails, links de convite/recuperação e operação multiusuário simultânea ainda precisam ser validados no projeto Supabase real. Os testes embarcados não substituem essa homologação.
 
