@@ -21,4 +21,6 @@ dialog.odontogram-modal{width:min(1120px,calc(100vw - 28px))}.odontogram-tabs{di
 @media(max-width:560px){.share-strip{grid-template-columns:1fr}.nav-count{display:none}}
 html,body{touch-action:pan-x pan-y}
 @media(max-width:800px){input,select,textarea{font-size:16px!important}}
- .clinical-chart button{pointer-events:auto!important}.clinical-chart .selected{background:#bf906a66!important;outline:2px solid #aa7854}
+ .clinical-chart button{pointer-events:auto!important}.clinical-chart .selected,.budget-imported-chart .selected{background:#bf906a66!important;outline:2px solid #aa7854}
+.sidebar{overflow-x:hidden;overflow-y:auto;max-height:100dvh;scrollbar-width:thin;scrollbar-color:#c9b7aa transparent}.sidebar nav,.sidebar-bottom{flex-shrink:0}.nav-item{font-size:14px;line-height:1.25;min-height:46px}.profile{font-size:12px}.profile small{font-size:10px}.budget-imported-chart{margin:12px 0 22px}.budget-imported-chart section+section{margin-top:22px}.budget-imported-chart h4{margin:0 0 10px}.budget-imported-chart button{pointer-events:none!important}.budget-imported-chart .reference-scroll{margin-bottom:0}
+@media(max-width:800px){.sidebar{max-height:none;overflow:visible}.nav-item{font-size:13px;min-height:44px}}
