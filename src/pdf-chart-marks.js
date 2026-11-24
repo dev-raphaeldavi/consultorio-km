@@ -1,12 +1,13 @@
 import {rgb} from 'pdf-lib';
 import {facesOf} from './findings.js';
+import contours from './tooth-contours.json' with {type:'json'};
 export function drawChartMarks(page,chart,entries,x,top,scale){
- const red=rgb(.85,.08,.12),seen=new Set();
+ const red=rgb(1,0,.03),seen=new Set();
  for(const e of entries){
   const tooth=Number(e.body.tooth),upper=chart.upper.includes(tooth),index=(upper?chart.upper:chart.lower).indexOf(tooth);
   if(index<0)continue;
   const cx=chart.centers[index],a=upper?chart.upperTop:chart.lowerTop,b=upper?chart.upperBottom:chart.lowerBottom,fy=upper?chart.upperFace:chart.lowerFace;
-  if(!seen.has(tooth)){page.drawEllipse({x:x+cx*scale,y:top-(a+b)/2*scale,xScale:22*scale,yScale:((b-a)/2+4)*scale,borderColor:red,borderWidth:.9});seen.add(tooth);}
+  if(!seen.has(tooth)&&contours[tooth]){page.drawSvgPath(contours[tooth],{x,y:top,scale,color:red});seen.add(tooth);}
   for(const face of new Set(facesOf(e.body))){
    if(face==='all')continue;
    const inner=upper?'P':'L',right=[1,4,5,8].includes(Math.floor(tooth/10));let dx=0,dy=0;
