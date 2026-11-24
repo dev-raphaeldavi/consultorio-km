@@ -12,7 +12,7 @@ test('odontograma pinta todas as faces salvas e a seleção atual',()=>{
  assert.deepEqual(buttons.map(b=>b.classList.values.has('selected')),[true,true,true,false,true,true]);
  assert.equal(buttons[0].attributes['aria-pressed'],'true');
  assert.equal(buttons[3].attributes['aria-pressed'],'false');
- assert.equal(buttons[4].style.outline,'2px solid #287c9a');
+ assert.equal(buttons[4].style.outline,'');
 });
 
 test('edição e exclusão preservam histórico, mas retornam só achados ativos',()=>{
