@@ -32,3 +32,24 @@ export async function manageUser(action,user_id){if(demo){if(user.role!=='admin'
 export async function invite(){throw Error('Cadastros são criados pela administração do Supabase.');}
 export async function changePassword(password){if(password.length<8)throw Error('Use pelo menos 8 caracteres.');if(demo){await rpc('complete_password_change');return;}const {error}=await supabase.auth.updateUser({password});if(error)throw Error('Não foi possível alterar a senha.');await rpc('complete_password_change');}
 export async function resetDemo(){db=demoData();persist();}
+
+export async function clinicalEntries(patientId){
+ if(demo)return (db.clinical_entries||[]).filter(e=>e.patient_id===patientId).sort((a,b)=>a.created_at.localeCompare(b.created_at));
+ const rows=[];for(let start=0;;start+=500){const {data,error}=await supabase.from('clinical_entries').select('*').eq('patient_id',patientId).order('created_at').order('id').range(start,start+499);if(error)throw Error('Não foi possível carregar o prontuário. Confira a conexão e a ativação do módulo.');rows.push(...data);if(data.length<500)return rows;}
+}
+export async function saveClinical(patientId,section,body,id){
+ if(demo){if(!db.patients.some(p=>p.id===patientId&&(user.role==='admin'||p.created_by===user.id||db.patient_access.some(a=>a.patient_id===patientId&&a.professional_id===user.id))))throw Error('Acesso negado.');db.clinical_entries??=[];if(db.clinical_entries.some(e=>e.id===id))return id;db.clinical_entries.push({id,patient_id:patientId,section,body,author_id:user.id,author_name:user.full_name,created_at:new Date().toISOString()});audit('clinical_entries',id,'Registro no prontuário');persist();return id;}
+ return rpc('append_clinical_entry',{p_patient:patientId,p_section:section,p_body:body,p_id:id});
+}
+export async function uploadClinical(patientId,file){
+ if(!['image/jpeg','image/png','application/pdf'].includes(file.type)||file.size>10485760)throw Error('Use PDF, JPG ou PNG de até 10 MB.');
+ if(demo){if(file.size>1048576)throw Error('Na demonstração, use arquivos de até 1 MB.');const url=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});return {name:file.name,type:file.type,size:file.size,demo_url:url};}
+ const path=patientId+'/'+user.id+'/'+uuid()+'.'+({'image/jpeg':'jpg','image/png':'png','application/pdf':'pdf'}[file.type]);
+ const {error}=await supabase.storage.from('clinical-documents').upload(path,file,{contentType:file.type,upsert:false});
+ if(error)throw Error('Não foi possível enviar o anexo. Tente novamente.');return {path,name:file.name,type:file.type,size:file.size};
+}
+export async function clinicalFile(file){
+ if(demo&&file.demo_url)return (await fetch(file.demo_url)).blob();
+ const {data,error}=await supabase.storage.from('clinical-documents').download(file.path);if(error)throw Error('Não foi possível abrir o anexo '+file.name);return data;
+}
+
