@@ -21,3 +21,4 @@ dialog.odontogram-modal{width:min(1120px,calc(100vw - 28px))}.odontogram-tabs{di
 @media(max-width:560px){.share-strip{grid-template-columns:1fr}.nav-count{display:none}}
 html,body{touch-action:pan-x pan-y}
 @media(max-width:800px){input,select,textarea{font-size:16px!important}}
+ .clinical-chart button{pointer-events:auto!important}.clinical-chart .selected{background:#bf906a66!important;outline:2px solid #aa7854}
