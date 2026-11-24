@@ -5,7 +5,7 @@ import {PGlite} from '@electric-sql/pglite';
 test('cadastro gera identificação; fila preserva histórico e impede acesso cruzado',async()=>{
  const db=new PGlite();
  await db.exec("create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth,public to authenticated,anon;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(bucket_id text,name text);create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;");
- for(const name of ['001_initial','006_clinical_records','008_patient_workflow'])await db.exec(await readFile('supabase/migrations/'+name+'.sql','utf8'));
+ for(const name of ['001_initial','002_financial_approvals','004_odontogram_surfaces','005_primary_teeth','006_clinical_records','008_patient_workflow','009_budget_findings'])await db.exec(await readFile('supabase/migrations/'+name+'.sql','utf8'));
  const pro='10000000-0000-0000-0000-000000000001',other='10000000-0000-0000-0000-000000000002';
  await db.exec(`insert into auth.users values('${pro}'),('${other}');insert into profiles(id,full_name,role) values('${pro}','Pro','professional'),('${other}','Outro','professional');`);
  const q=async(sql,args=[])=> (await db.query(sql,args)).rows;
@@ -17,6 +17,16 @@ test('cadastro gera identificação; fila preserva histórico e impede acesso cr
  assert.equal((await q('select * from clinical_entries')).length,4);
  await assert.rejects(q("select set_profile_avatar($1)",[other+'/photo']));
  await q('select set_profile_avatar($1)',[pro+'/photo']);
+ await db.exec('reset role');
+ const service=(await q("insert into services(name,amount_cents) values('Restauração',15000) returning id"))[0].id;
+ await actor(pro);
+ const finding=(await q("select append_clinical_entry($1,'odontogram',$2,gen_random_uuid()) id",[id,JSON.stringify({tooth:'16',surface:'M,O',findings:'Cárie'})]))[0].id;
+ const saveBudget=items=>q("select save_budget($1,$2::jsonb,1,current_date,60,40,null) id",[id,JSON.stringify(items)]);
+ const budget=(await saveBudget([{service_id:service,tooth:16,tooth_surface:'M,O',clinical_entry_id:finding}]))[0].id;
+ const item=(await q('select * from budget_items where budget_id=$1',[budget]))[0];
+ assert.equal(item.clinical_entry_id,finding);assert.equal(item.tooth_surface,'M,O');assert.equal(Number(item.amount_cents),15000);
+ await assert.rejects(saveBudget([{service_id:service,tooth:18,tooth_surface:'M,O',clinical_entry_id:finding}]));
+ await assert.rejects(saveBudget([{service_id:service,tooth:16,tooth_surface:'M,O'}]));
  await actor(other);await assert.rejects(q("select save_patient_registration($1,'Outro','123','{}')",[id]));await assert.rejects(q("select set_patient_attendance($1,'waiting')",[id]));
  assert.equal((await q('select * from patients')).length,0);await db.close();
 });
