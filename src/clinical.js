@@ -36,7 +36,7 @@ export function installClinical({api,getData,dialog,toast,refresh}){
   if(!open&&!b)return;e.preventDefault();e.stopImmediatePropagation();
   if((open||b).disabled)return;(open||b).disabled=true;
   try{
-   if(open){patient=getData().patients.find(p=>p.id===open.dataset.id);section='identification';entries=await api.clinicalEntries(patient.id);render();return;}
+   if(open){patient=getData().patients.find(p=>p.id===open.dataset.id);section=open.dataset.section||'identification';entries=await api.clinicalEntries(patient.id);render();return;}
    if(b.dataset.clinical==='section'){section=b.dataset.section;render();}
    if(b.dataset.clinical==='history'){modal.querySelector('#clinical-work').innerHTML='<h3>Histórico completo do paciente</h3>'+historyHtml(entries);}
    if(b.dataset.clinical==='file'){const file=entries.find(e=>e.id===b.dataset.id).body.file;const blob=await api.clinicalFile(file);download(blob,file.name);}

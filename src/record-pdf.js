@@ -1,5 +1,6 @@
 import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
 import {sections} from './clinical.js';
+import './patient-workflow.js';
 import {dentitions} from './odontogram.js';
 export async function createRecordPDF({patient,entries,data,demo=false,getFile,asset=async p=>new Uint8Array(await (await fetch(p)).arrayBuffer())}){
  const pdf=await PDFDocument.create();pdf.setTitle('Prontuário odontológico - '+patient.full_name);pdf.setAuthor('Consultório Kamila Marinho');

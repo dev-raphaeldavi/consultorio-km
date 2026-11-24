@@ -1,0 +1,22 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {PGlite} from '@electric-sql/pglite';
+test('cadastro gera identificação; fila preserva histórico e impede acesso cruzado',async()=>{
+ const db=new PGlite();
+ await db.exec("create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth,public to authenticated,anon;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(bucket_id text,name text);create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;");
+ for(const name of ['001_initial','006_clinical_records','008_patient_workflow'])await db.exec(await readFile('supabase/migrations/'+name+'.sql','utf8'));
+ const pro='10000000-0000-0000-0000-000000000001',other='10000000-0000-0000-0000-000000000002';
+ await db.exec(`insert into auth.users values('${pro}'),('${other}');insert into profiles(id,full_name,role) values('${pro}','Pro','professional'),('${other}','Outro','professional');`);
+ const q=async(sql,args=[])=> (await db.query(sql,args)).rows;
+ const actor=async id=>{await db.exec('reset role');await q("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');};
+ await actor(pro);const id=(await q("select save_patient_registration(null,'Paciente teste','123','{\"city\":\"Custódia\"}') id"))[0].id;
+ assert.equal((await q('select body from clinical_entries'))[0].body.city,'Custódia');
+ await assert.rejects(q("select set_patient_attendance($1,'finished')",[id]));
+ for(const state of ['waiting','attending','finished'])await q('select set_patient_attendance($1,$2)',[id,state]);
+ assert.equal((await q('select * from clinical_entries')).length,4);
+ await assert.rejects(q("select set_profile_avatar($1)",[other+'/photo']));
+ await q('select set_profile_avatar($1)',[pro+'/photo']);
+ await actor(other);await assert.rejects(q("select save_patient_registration($1,'Outro','123','{}')",[id]));await assert.rejects(q("select set_patient_attendance($1,'waiting')",[id]));
+ assert.equal((await q('select * from patients')).length,0);await db.close();
+});

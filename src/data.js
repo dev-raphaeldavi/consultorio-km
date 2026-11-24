@@ -52,4 +52,21 @@ export async function clinicalFile(file){
  if(demo&&file.demo_url)return (await fetch(file.demo_url)).blob();
  const {data,error}=await supabase.storage.from('clinical-documents').download(file.path);if(error)throw Error('Não foi possível abrir o anexo '+file.name);return data;
 }
+export async function saveRegistration(id,full_name,phone,registration){
+ if(!demo)return rpc('save_patient_registration',{p_id:id||null,p_name:full_name,p_phone:phone,p_registration:registration});
+ if(id&&!db.patients.some(p=>p.id===id&&(user.role==='admin'||p.created_by===user.id||db.patient_access.some(a=>a.patient_id===id&&a.professional_id===user.id))))throw Error('Acesso negado.');
+ let p=id?db.patients.find(p=>p.id===id):await insert('patients',{full_name,phone,attendance:'registered'});Object.assign(p,{full_name,phone,registration});persist();await saveClinical(p.id,'identification',{...registration,full_name,phone},uuid());return p.id;
+}
+export async function attendance(id,status){
+ if(!demo)return rpc('set_patient_attendance',{p_id:id,p_status:status});
+ const p=(await load()).patients.find(p=>p.id===id);if(!p)throw Error('Acesso negado.');
+ const prior=p.attendance||'registered';if(!({registered:['waiting'],waiting:['attending'],attending:['finished'],finished:['waiting']}[prior]||[]).includes(status))throw Error('Etapa inválida.');
+ Object.assign(db.patients.find(p=>p.id===id),{attendance:status,attendance_at:new Date().toISOString()});persist();await saveClinical(id,'evolution',{date:new Date().toISOString().slice(0,10),procedure:{waiting:'Chegada / aguardando atendimento',attending:'Início do atendimento',finished:'Encerramento do atendimento'}[status]},uuid());
+}
+export async function saveAvatar(file){
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>2097152)throw Error('Escolha JPG, PNG ou WebP de até 2 MB.');
+ if(demo){user.avatar_demo=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});Object.assign(db.profiles.find(p=>p.id===user.id),{avatar_demo:user.avatar_demo});persist();return;}
+ const path=user.id+'/'+uuid();const {error}=await supabase.storage.from('profile-photos').upload(path,file,{contentType:file.type});if(error)throw Error('Não foi possível enviar a foto. Confira a ativação do armazenamento.');await rpc('set_profile_avatar',{p_path:path});user.avatar_path=path;
+}
+export async function avatarURL(){if(demo)return user.avatar_demo||'';if(!user.avatar_path)return '';const {data,error}=await supabase.storage.from('profile-photos').createSignedUrl(user.avatar_path,300);if(error)return '';return data.signedUrl;}
 
