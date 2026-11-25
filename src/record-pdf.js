@@ -8,11 +8,11 @@ export {createRecordPDF} from './compact-record.js';
 export async function createFullRecordPDF({patient,entries,data,demo=false,getFile,asset=async p=>new Uint8Array(await (await fetch(p)).arrayBuffer())}){
  const pdf=await PDFDocument.create();pdf.setTitle('Prontuário odontológico - '+patient.full_name);pdf.setAuthor('CONSULTÓRIO KAMILA MARINHO');
  const regular=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold),serif=await pdf.embedFont(StandardFonts.TimesRoman);
- const ink=rgb(.20,.30,.35),muted=rgb(.43,.49,.52),accent=rgb(.73,.52,.38),line=rgb(.88,.89,.88);
+ const ink=rgb(.12,.22,.28),muted=rgb(.30,.37,.40),accent=rgb(.73,.52,.38),line=rgb(.88,.89,.88);
  const logo=await pdf.embedJpg(await asset('/assets/marca.jpg'));
  let page,y,pages=[];const clean=s=>Array.from(String(s??'')).map(c=>{try{regular.encodeText(c);return c;}catch{return '?';}}).join('');
  const text=(s,x,yy,size=10,font=regular,color=ink)=>page.drawText(clean(s),{x,y:yy,size,font,color});
- const newPage=()=>{page=pdf.addPage([595.28,841.89]);pages.push(page);page.drawImage(logo,{x:42,y:758,width:137,height:137*logo.height/logo.width});text('PRONTUÁRIO ODONTOLÓGICO',280,790,10,bold);text(patient.full_name.slice(0,46),280,772,10);page.drawLine({start:{x:42,y:742},end:{x:553,y:742},thickness:1,color:accent});y=718;};
+ const newPage=()=>{page=pdf.addPage([595.28,841.89]);pages.push(page);text('CONSULTÓRIO',42,800,11,bold);text('KAMILA MARINHO',42,779,16,bold);text('PRONTUÁRIO ODONTOLÓGICO',280,790,10,bold);text(patient.full_name.slice(0,46),280,772,10);page.drawLine({start:{x:42,y:742},end:{x:553,y:742},thickness:1,color:accent});y=718;};
  const ensure=h=>{if(y-h<65)newPage();};
  const paragraph=(value,size=10,font=regular,color=ink)=>{
   const width=505;for(const raw of clean(value||'Não informado.').split('\n')){
