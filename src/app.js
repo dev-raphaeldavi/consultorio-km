@@ -1,6 +1,6 @@
 import * as api from './data.js';
 import {installAgenda} from './agenda.js';
-const agendaPage=installAgenda({getData:()=>data,dialog,toast});
+const agendaPage=installAgenda({getData:()=>data,dialog,toast,printDoc});
 import {installClinical,recordsList} from './clinical.js';
 import {installWorkflow,queueHTML} from './patient-workflow.js';
 import {findingsOf,markFindings} from './findings.js';
