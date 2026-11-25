@@ -6,7 +6,7 @@ import {dentitions} from './odontogram.js';
 import {findingsOf} from './findings.js';
 export {createRecordPDF} from './compact-record.js';
 export async function createFullRecordPDF({patient,entries,data,demo=false,getFile,asset=async p=>new Uint8Array(await (await fetch(p)).arrayBuffer())}){
- const pdf=await PDFDocument.create();pdf.setTitle('Prontuário odontológico - '+patient.full_name);pdf.setAuthor('Consultório Kamila Marinho');
+ const pdf=await PDFDocument.create();pdf.setTitle('Prontuário odontológico - '+patient.full_name);pdf.setAuthor('CONSULTÓRIO KAMILA MARINHO');
  const regular=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold),serif=await pdf.embedFont(StandardFonts.TimesRoman);
  const ink=rgb(.20,.30,.35),muted=rgb(.43,.49,.52),accent=rgb(.73,.52,.38),line=rgb(.88,.89,.88);
  const logo=await pdf.embedJpg(await asset('/assets/marca.jpg'));
@@ -47,7 +47,7 @@ export async function createFullRecordPDF({patient,entries,data,demo=false,getFi
   if(file.type.startsWith('image/')){const img=file.type==='image/png'?await pdf.embedPng(bytes):await pdf.embedJpg(bytes),scale=Math.min(505/img.width,(y-90)/img.height);page.drawImage(img,{x:45,y:y-img.height*scale,width:img.width*scale,height:img.height*scale});}
   else {paragraph('Original incluído como arquivo anexo neste PDF. As páginas a seguir reproduzem o documento.');let source;try{source=await PDFDocument.load(bytes);}catch{throw Error('O anexo '+file.name+' está protegido ou inválido. Gere uma cópia PDF sem senha para incluí-lo.');}for(const p of await pdf.copyPages(source,source.getPageIndices()))pdf.addPage(p);}
  }
- const all=pdf.getPages();for(const p of pages){const n=all.indexOf(p)+1;p.drawLine({start:{x:42,y:51},end:{x:553,y:51},thickness:.5,color:line});p.drawText('Consultório KM | Dra. Kamila Marinho | CRO-PE 16029',{x:42,y:37,size:8,font:regular,color:muted});p.drawText('Av. Inocêncio Lima, 515 - Sala 201 - Custódia/PE',{x:42,y:25,size:8,font:regular,color:muted});p.drawText(n+' / '+all.length,{x:515,y:32,size:9,font:regular,color:muted});}
+ const all=pdf.getPages();for(const p of pages){const n=all.indexOf(p)+1;p.drawLine({start:{x:42,y:51},end:{x:553,y:51},thickness:.5,color:line});p.drawText('CONSULTÓRIO KAMILA MARINHO | Dra. Kamila Marinho | CRO-PE 16029',{x:42,y:37,size:8,font:regular,color:muted});p.drawText('Av. Inocêncio Lima, 515 - Sala 201 - Custódia/PE',{x:42,y:25,size:8,font:regular,color:muted});p.drawText(n+' / '+all.length,{x:515,y:32,size:9,font:regular,color:muted});}
  return pdf.save();
 }
 
