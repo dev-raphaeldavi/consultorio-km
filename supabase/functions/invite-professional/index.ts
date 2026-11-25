@@ -18,10 +18,25 @@ Deno.serve(async (req) => {
   const { data: profile } = await client.from('profiles').select('role, active').eq('id', identity.user.id).single();
   if (!profile?.active || profile.role !== 'admin') return reply({ error: 'Somente a proprietária pode convidar profissionais.' }, 403);
   try {
-    const { action, user_id } = await req.json();
+    const { action, user_id, email, full_name, role, business_model, room_rent_cents } = await req.json();
+    if (action === 'create_user') {
+      if (typeof email !== 'string' || !email.includes('@') || typeof full_name !== 'string' || full_name.trim().length < 2 || !['professional', 'secretary'].includes(role)) return reply({ error: 'Dados do novo usuário são inválidos.' }, 400);
+      const model = role === 'professional' && business_model === 'room_rental' ? 'room_rental' : 'percentage';
+      const rent = model === 'room_rental' ? Number(room_rent_cents) : 0;
+      if (!Number.isSafeInteger(rent) || rent < 0) return reply({ error: 'Valor de aluguel inválido.' }, 400);
+      const { data: created, error: createError } = await client.auth.admin.createUser({ email: email.trim().toLowerCase(), password: 'ckm123', email_confirm: true });
+      if (createError || !created.user) return reply({ error: 'Não foi possível criar o acesso. Confira se o e-mail já existe.' }, 400);
+      const { error: profileError } = await client.from('profiles').insert({ id: created.user.id, email: email.trim().toLowerCase(), full_name: full_name.trim(), role, active: true, must_change_password: true, business_model: model, room_rent_cents: rent });
+      if (profileError) {
+        await client.auth.admin.deleteUser(created.user.id);
+        return reply({ error: 'Não foi possível criar o perfil.' }, 400);
+      }
+      await client.from('audit_logs').insert({ actor_id: identity.user.id, action: 'CREATE_USER', entity: 'profiles', record_id: created.user.id });
+      return reply({ success: true, user_id: created.user.id, temporary_password: 'ckm123' });
+    }
     if (action !== 'reset_password' || typeof user_id !== 'string') return reply({ error: 'Operação inválida.' }, 400);
     const { data: target } = await client.from('profiles').select('id, role').eq('id', user_id).single();
-    if (!target || target.role !== 'professional') return reply({ error: 'Profissional não encontrado.' }, 404);
+    if (!target || !['professional', 'secretary', 'admin'].includes(target.role)) return reply({ error: 'Usuário não encontrado.' }, 404);
     const { error } = await client.auth.admin.updateUserById(user_id, { password: 'ckm123' });
     if (error) return reply({ error: 'Não foi possível redefinir a senha.' }, 400);
     await client.from('profiles').update({ must_change_password: true }).eq('id', user_id);
