@@ -34,3 +34,4 @@ html,body{touch-action:pan-x pan-y}
 .week-calendar{grid-template-rows:120px 2880px}.week-calendar>.week-day,.week-calendar>.week-hours{height:2880px}.week-calendar .week-event{z-index:4}
 .reference-board .tooth-profile:hover:not([aria-pressed=true]) .tooth-contour,.reference-board .face-segment:hover:not([aria-pressed=true]) .face-dot{display:none}
 #print-area{color:#1f3847}.print-clinic-brand{font-weight:700;color:#1f3847;font-size:22px;line-height:1.3}
+.clinic-symbol{display:block;width:46px;height:46px;object-fit:contain;flex-shrink:0}.sidebar .clinic-symbol{width:38px;height:38px}.print-brand{display:flex;gap:14px;align-items:center;margin-bottom:24px}.print-brand .clinic-symbol{width:60px;height:60px}.print-brand h2{margin:0}
